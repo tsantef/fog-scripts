@@ -1,0 +1,81 @@
+#!/bin/sh
+
+dashless=$(basename "$0" | sed -e 's/-/ /')
+USAGE="USAGE: $dashless <branch>"
+
+usage() 
+{
+  echo "$USAGE"
+  exit 1
+}
+
+echo_stage()
+{
+  echo "== $1 =="
+}
+
+branch_name=$1
+upstream_url=$(git config remote.upstream.url) 
+
+if test "$upstream_url" != "git@github.com:phpfog/phpfog.git" ; then
+  echo "$dashless only works with the phpfog repo"
+  usage
+fi
+
+if test -z "$branch_name"; then
+  usage
+fi
+
+echo_stage "Checking out $branch_name"
+git checkout "$branch_name"
+ec=$?
+if [[ $ec != 0 ]] ; then
+    exit $ec
+fi
+
+echo_stage "Checking out $branch_name"
+git diff-index --quiet HEAD
+ec=$?
+if [[ $ec != 0 ]] ; then
+	echo "There are uncommitted changes in branch: $branch_name"
+	echo "Cannot deploy!"
+    exit $ec
+fi
+
+echo_stage "Checking out QA"
+git checkout qa
+ec=$?
+if [[ $ec != 0 ]] ; then
+    exit $ec
+fi
+
+echo_stage "Fetching Upstream"
+git fetch upstream 
+ec=$?
+if [[ $ec != 0 ]] ; then
+    exit $ec
+fi
+
+echo_stage "Merging Upstream QA"
+git merge upstream/qa
+ec=$?
+if [[ $ec != 0 ]] ; then
+    exit $ec
+fi
+
+echo_stage "Mering $branch_name"
+git merge "$branch_name"
+ec=$?
+if [[ $ec != 0 ]] ; then
+    exit $ec
+fi
+
+echo_stage "Pushing to Upstream QA"
+git push upstream qa
+ec=$?
+if [[ $ec != 0 ]] ; then
+    exit $ec
+fi
+
+echo_stage "Deploying to QA"
+fab -u tim -f deploy/fabfile.py deploy
