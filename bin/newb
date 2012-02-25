@@ -1,0 +1,27 @@
+#!/bin/zsh
+
+dashless=$(basename "$0" | sed -e 's/-/ /')
+USAGE="USAGE: $dashless <branch>"
+
+usage() 
+{
+  echo "$USAGE"
+  exit 1
+}
+
+branch_name=$1
+upstream_url=$(git config remote.upstream.url) 
+
+if test "$upstream_url" != "git@github.com:phpfog/phpfog.git" ; then
+  echo "$dashless only works with the phpfog repo"
+  usage
+fi
+
+if test -z "$branch_name"; then
+  usage
+fi
+
+git checkout master
+git fetch upstream
+git merge upstream/master
+git checkout -b "$branch_name"
