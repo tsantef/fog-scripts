@@ -1,7 +1,7 @@
 #!/bin/sh
 
 dashless=$(basename "$0" | sed -e 's/-/ /')
-USAGE="USAGE: $dashless [--commit <message>] <branch>"
+USAGE="USAGE: $dashless [--commit <message>] [--user <user>] <branch>"
 
 usage() 
 {
@@ -115,7 +115,7 @@ if [[ $ec != 0 ]] ; then
 fi
 
 echo_stage "Deploying to QA"
-`fab $user -f deploy/fabfile.py deploy`
+fab $user -f deploy/fabfile.py deploy
 
 echo_stage "Checking out $branch_name"
 git checkout "$branch_name"
