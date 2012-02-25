@@ -2,7 +2,7 @@
 
     cat install.sh | sh
 
-add the following path to your path
+add the following to your path
 
     ~/fog-bin
 
