@@ -1,0 +1,36 @@
+#!/bin/bash
+# git-interactive-merge
+# Taken from: http://www.angrylibertarian.com/node/53
+from=$1
+to=$2
+
+echo_stage()
+{
+  echo "== \033[1;37m$1\033[0m =="
+}
+
+if [[ ( -z $from ) || ( -z $to ) ]]; then
+    echo "Usage: merm <from-branch> <to-branch>"
+    exit 1
+fi
+
+echo_stage "Checking out $from branch"
+git checkout $from || exit 1
+
+echo_stage "Creating ${from}_tmp branch" 
+git checkout -b ${from}_tmp || exit 1
+
+echo_stage "Rebasing on ${to} branch" 
+git rebase -i $to || exit 1
+# Above will drop you in an editor and pick the changes you want
+
+echo_stage "Checking out $to branch" 
+git checkout $to || exit 1
+
+echo_stage "Pulling from ${from}_tmp branch"
+git pull . ${from}_tmp || exit 1
+
+echo_stage "Removing ${from}_tmp branch"
+git branch -d ${from}_tmp || exit 1
+
+echo_stage "Success!"
