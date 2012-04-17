@@ -10,7 +10,7 @@ usage()
 }
 
 branch_name=$1
-upstream_url=$(git config remote.upstream.url) 
+upstream_url=$(git config remote.upstream.url)
 
 if test "$upstream_url" != "git@github.com:phpfog/phpfog.git" ; then
   echo "$dashless only works with the phpfog repo"

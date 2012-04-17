@@ -50,6 +50,7 @@ do
   shift
 done
 
+first_branch_name=$1
 branch_name=$1
 upstream_url=$(git config remote.upstream.url) 
 
@@ -62,24 +63,6 @@ if test -z "$branch_name"; then
   usage
 fi
 
-echo_stage "Checking out $branch_name"
-git checkout "$branch_name" || exit 1
-
-echo_stage "Checking uncommitted changes in $branch_name"
-git diff-index --quiet HEAD
-ec=$?
-if [[ $ec != 0 ]] ; then
-  if ! test -z "$commit_message"; then
-    git add .
-    git add -u
-    git commit -m "\"$commit_message\""
-  else
-    echo "There are uncommitted changes in branch: $branch_name"
-    echo "Cannot deploy!"
-    exit $ec
-  fi
-fi
-
 echo_stage "Checking out QA"
 git checkout qa || exit 1
 
@@ -89,14 +72,48 @@ git fetch upstream || exit 1
 echo_stage "Merging Upstream QA"
 git merge upstream/qa || exit 1
 
-echo_stage "Mering $branch_name"
-git merge "$branch_name" || exit 1
+while test "$branch_name" != ""
+do
+  echo_stage "Checking out $branch_name"
+  git checkout "$branch_name" || exit 1
+
+  echo_stage "Checking uncommitted changes in $branch_name"
+  git diff-index --quiet HEAD
+  ec=$?
+  if [[ $ec != 0 ]] ; then
+    if ! test -z "$commit_message"; then
+      git add .
+      git add -u
+      git commit -m "\"$commit_message\""
+    else
+      echo "There are uncommitted changes in branch: $branch_name"
+      echo "Cannot deploy!"
+      exit $ec
+    fi
+  fi
+
+  echo_stage "Checking out QA"
+  git checkout qa || exit 1
+
+  echo_stage "Mering $branch_name"
+  git merge "$branch_name" || exit 1
+
+  shift
+  branch_name=$1
+done
 
 echo_stage "Pushing to Upstream QA"
 git push upstream qa || exit 1
+
+echo_stage "Update Deployment Scripts"
+pushd deploy
+git pull
+popd
 
 echo_stage "Deploying to QA"
 fab $user -f deploy/fabfile.py deploy
 
 echo_stage "Checking out $branch_name"
-git checkout "$branch_name"
+git checkout "$first_branch_name"
+
+say "Deploy complete"
